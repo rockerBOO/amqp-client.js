@@ -13,7 +13,7 @@ export class AMQPChannel {
   readonly connection: AMQPBaseClient
   readonly id: number
   readonly consumers = new Map<string, AMQPConsumer>()
-  private rpcQueue: Promise<any> = Promise.resolve(true)
+  private rpcQueue: Promise<unknown> = Promise.resolve(true)
   readonly promises: [(value?: any) => void, (err?: Error) => void][] = []
   private readonly unconfirmedPublishes: [number, (confirmId: number) => void, (err?: Error) => void][] = []
   closed = false
