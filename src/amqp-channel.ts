@@ -13,6 +13,7 @@ export class AMQPChannel {
   readonly connection: AMQPBaseClient
   readonly id: number
   readonly consumers = new Map<string, AMQPConsumer>()
+  private rpcQueue: Promise<any> = Promise.resolve(true)
   readonly promises: [(value?: any) => void, (err?: Error) => void][] = []
   private readonly unconfirmedPublishes: [number, (confirmId: number) => void, (err?: Error) => void][] = []
   closed = false
@@ -749,9 +750,11 @@ export class AMQPChannel {
    */
   private sendRpc(frame: AMQPView, frameSize: number): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.connection.send(new Uint8Array(frame.buffer, 0, frameSize))
-        .then(() => this.promises.push([resolve, reject]))
-        .catch(reject)
+      this.rpcQueue = this.rpcQueue.then(() => {
+        this.connection.send(new Uint8Array(frame.buffer, 0, frameSize))
+          .then(() => this.promises.push([resolve, reject]))
+          .catch(reject)
+      })
     })
   }
 
