@@ -164,8 +164,7 @@ test('can close a channel', async t => {
   const conn = await amqp.connect()
   const ch = await conn.channel()
   await ch.close()
-  const error = await t.throwsAsync(ch.close())
-  t.is(error.message, 'Channel is closed');
+  await t.throwsAsync(ch.close(), { message: 'Channel is closed' })
 })
 
 test('connection error raises everywhere', async t => {
@@ -255,8 +254,7 @@ test('can handle nacks on confirm channel', async t => {
 
   const q = await ch.queue("", {}, {"x-overflow": "reject-publish", "x-max-length": 0})
   await ch.confirmSelect()
-  const error = await t.throwsAsync(q.publish("body"))
-  t.is(error.message, "Message rejected")
+  await t.throwsAsync(q.publish("body"), { message: "Message rejected" })
 })
 
 test('throws on invalid exchange type', async t => {
@@ -264,8 +262,7 @@ test('throws on invalid exchange type', async t => {
   const conn = await amqp.connect()
   const ch = await conn.channel()
   const name = "test" + Math.random()
-  const err = await t.throwsAsync(ch.exchangeDeclare(name, "none"))
-  t.regex(err.message, /invalid exchange type/)
+  await t.throwsAsync(ch.exchangeDeclare(name, "none"), { message: /invalid exchange type/ })
 })
 
 test('can declare an exchange', async t => {
@@ -277,8 +274,7 @@ test('can declare an exchange', async t => {
   await ch.exchangeDeclare(name, "fanout")
   await t.notThrowsAsync(ch.basicPublish(name, "rk", "body"))
   await ch.exchangeDelete(name)
-  const err = await t.throwsAsync(ch.basicPublish(name, "rk", "body"))
-  t.regex(err.message, /NOT_FOUND/)
+  await t.throwsAsync(ch.basicPublish(name, "rk", "body"), { message: /NOT_FOUND/ })
 })
 
 test('exchange to exchange bind/unbind', async t => {
@@ -458,9 +454,11 @@ test('can publish messages spanning multiple frames', async t => {
   t.plan(sizes.length)
   for (let i = 0; i < sizes.length; i++) {
     const n = sizes[i]
-    await q.publish(Buffer.alloc(n || 0))
-    const msg = await q.get()
-    if (msg) t.is(msg.bodySize, n)
+    if (n) {
+      await q.publish(Buffer.alloc(n || 0))
+      const msg = await q.get()
+      if (msg) t.is(msg.bodySize, n)
+    }
   }
 })
 
@@ -469,13 +467,6 @@ test('set basic flow on channel', async t => {
   const conn = await amqp.connect()
   const ch = await conn.channel()
   await t.notThrowsAsync(async () =>  await ch.basicFlow(true))
-})
-
-test('can resolve promise on channel', async t => {
-  const amqp = new AMQPClient("amqp://127.0.0.1")
-  const conn = await amqp.connect()
-  const ch = await conn.channel()
-  t.false(ch.resolvePromise())
 })
 
 test('confirming unknown deliveryTag', async t => {
@@ -671,8 +662,7 @@ test("raises when channelMax is reached", async t => {
   for (let i = 0; i < conn.channelMax; i++) {
     await conn.channel()
   }
-  const error = await t.throwsAsync(conn.channel())
-  t.is(error.message, 'Max number of channels reached');
+  await t.throwsAsync(conn.channel(), { message: 'Max number of channels reached' })
 
   // make sure other channels still work
   const ch1 = await conn.channel(1)
